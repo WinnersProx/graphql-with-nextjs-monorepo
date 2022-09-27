@@ -30,4 +30,11 @@ export const typeDefs = gql(`
     # A comment, it's parent could be another comment or a news item.
     getInspired: Inspiration
   }
+
+  type Mutation {
+    loginUser (
+      username: String
+      password: String
+    ): User
+  }
 `);
