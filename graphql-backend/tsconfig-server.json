@@ -1,0 +1,18 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+      "jsx": "react",
+      "module": "commonjs",
+      "outDir": "dist",
+      "target": "es2017",
+      "isolatedModules": false,
+      "noEmit": false
+    },
+    "include": ["*.ts", "**/*.ts", "src/**/*.ts"],
+    "exclude": [
+      "node_modules",
+      "**/__tests__*",
+      "out",
+      ".next"
+    ]
+}
