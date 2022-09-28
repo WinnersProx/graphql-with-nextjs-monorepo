@@ -15,6 +15,12 @@ export const typeDefs = gql(`
 
   scalar Any
 
+  type User {
+    id: Int
+    fullName: String
+    email: String
+  }
+
   type Inspiration {
     id: Int!
 

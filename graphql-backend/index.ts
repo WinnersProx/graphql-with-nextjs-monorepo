@@ -5,23 +5,28 @@ import * as bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import express from "express";
 import session from "express-session";
+import passport from "./src/config/passport";
 
-const APP_PORT = 5001;
-const APP_URI = `http://localhost:${APP_PORT}`;
-const USE_GRAPHQL_PLAYGROUND = true;
-
-const SEVEN_DAYS = 1000 * 60 * 60 * 24 * 7;
+import {
+  APP_PORT,
+  APP_URI,
+  SEVEN_DAYS,
+  USE_GRAPHQL_PLAYGROUND,
+} from "./src/config/constants";
 
 import { typeDefs } from "./src/config/graphql-schema";
 import {
   resolvers,
   IGraphQlSchemaContext,
 } from "./src/config/graqhql-resolvers";
+import routes from "./src/routes";
 
 const expressServer = express();
 
 expressServer.use(cookieParser("mysecret"));
 expressServer.use(bodyParser.urlencoded({ extended: false }));
+expressServer.use(passport.initialize());
+expressServer.use(routes);
 
 expressServer.use(
   session({
@@ -33,10 +38,33 @@ expressServer.use(
   })
 );
 
+// Apply Authorization Checker
+expressServer.use((req, res, next) => {
+  if(req.headers.stateless !== "true") {
+    next();
+    return;
+  }
+
+  passport.authenticate('jwt', (err, user, __) => {
+
+    if(err || !user) return res.status(401).json({
+      success: false,
+      message: 'Unauthenticated'
+    });
+    
+    req.user = user;
+
+  })(req, res, next);
+
+  next();
+});
+
+
 const apolloServer = new ApolloServer({
   context: ({ req }: { req: any }): IGraphQlSchemaContext => ({
     lang: req.cookies.lang,
     req,
+    user: req.user,
   }),
   introspection: true,
   playground: USE_GRAPHQL_PLAYGROUND,
@@ -47,6 +75,8 @@ const apolloServer = new ApolloServer({
 apolloServer.applyMiddleware({
   app: expressServer,
   path: "/graphql",
+
+
 });
 
 expressServer.listen(APP_PORT, () => {

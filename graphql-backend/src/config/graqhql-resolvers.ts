@@ -10,15 +10,20 @@
  import { IResolvers } from 'graphql-tools';
  import { merge } from 'lodash';
  import { debug } from 'debug';
+import { User } from './users';
+import { Request } from 'express';
  
  const graphqlLogger = debug('app:Graphql-Resolvers');
  graphqlLogger.log = console.log.bind(console);
  
  export const logger = graphqlLogger;
  
+
+
  export interface IGraphQlSchemaContext {
    lang?: string | undefined | null;
-   req: any;
+   req: Request;
+   user: User | undefined
  }
  
  export const appResolvers: IResolvers<any, IGraphQlSchemaContext> = {
@@ -73,7 +78,9 @@
  
    Query: {
  
-     getInspired() {
+     getInspired(_, __, context) {
+      console.log('user', context.user);
+
        return {
         id: 10,
         creationTime: 1664275853750,
