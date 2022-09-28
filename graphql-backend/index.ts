@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import express from "express";
 import session from "express-session";
 import passport from "./src/config/passport";
+import cors from 'cors';
 
 import {
   APP_PORT,
@@ -25,7 +26,9 @@ const expressServer = express();
 
 expressServer.use(cookieParser("mysecret"));
 expressServer.use(bodyParser.urlencoded({ extended: false }));
+expressServer.use(bodyParser.json());
 expressServer.use(passport.initialize());
+expressServer.use(cors({ credentials: true }))
 expressServer.use(routes);
 
 expressServer.use(
@@ -46,17 +49,19 @@ expressServer.use((req, res, next) => {
   }
 
   passport.authenticate('jwt', (err, user, __) => {
+    if(err || !user) {
+       res.status(401).json({
+        success: false,
+        message: 'Unauthenticated'
+      });
+      return;
+    }
 
-    if(err || !user) return res.status(401).json({
-      success: false,
-      message: 'Unauthenticated'
-    });
-    
     req.user = user;
 
-  })(req, res, next);
+    next();
 
-  next();
+  })(req, res, next);
 });
 
 

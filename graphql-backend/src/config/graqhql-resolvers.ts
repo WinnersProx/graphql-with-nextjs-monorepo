@@ -79,8 +79,10 @@ import { Request } from 'express';
    Query: {
  
      getInspired(_, __, context) {
-      console.log('user', context.user);
 
+      // if(!context.user) throw Error("Sorry, We cannot inspire an anonymous user!");
+      console.log('user', context.user);
+      
        return {
         id: 10,
         creationTime: 1664275853750,

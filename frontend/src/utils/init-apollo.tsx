@@ -1,8 +1,11 @@
 import { InMemoryCache, NormalizedCacheObject } from 'apollo-cache-inmemory';
 import { ApolloClient } from 'apollo-client';
-import { createHttpLink } from 'apollo-link-http';
+import { ApolloLink, concat } from 'apollo-link';
+import { HttpLink } from 'apollo-link-http';
 import { debug } from 'debug';
 import fetch from 'isomorphic-unfetch';
+
+import { getAuthToken } from '.';
 
 const logger = debug('app:initApollo');
 logger.log = console.log.bind(console);
@@ -12,21 +15,42 @@ export const GRAPHQL_URL = 'http://localhost:5001/graphql';
 
 let apolloClient: ApolloClient<NormalizedCacheObject> | null = null;
 
+const getHttpLink = (getToken: any) => {
+  return new HttpLink({
+    uri: GRAPHQL_URL,
+    credentials: 'same-origin',
+    headers: {
+      // HTTP Header:  Cookie: <cookiename>=<cookievalue>
+      Cookie: `connect.sid=${getToken()['connect.sid']};lang=${getToken()['lang']}`,
+    },
+    fetch,
+  });
+}
+
+
+const authMiddleware = new ApolloLink((operation, forward) => {
+  const accessToken = getAuthToken();
+
+  if(accessToken) {
+    operation.setContext({
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        stateless: true
+      },
+    });
+  }
+  return forward(operation);
+});
+
+
+
 function create(
   initialState: any,
   { getToken }: any
 ): ApolloClient<NormalizedCacheObject> {
   return new ApolloClient({
     ssrMode: !IS_SERVER, // Disables forceFetch on the server (so queries are only run once)
-    link: createHttpLink({
-      uri: GRAPHQL_URL,
-      credentials: 'same-origin',
-      headers: {
-        // HTTP Header:  Cookie: <cookiename>=<cookievalue>
-        Cookie: `connect.sid=${getToken()['connect.sid']};lang=${getToken()['lang']}`,
-      },
-      fetch,
-    }),
+    link: authMiddleware.concat(getHttpLink(getToken)),
     cache: new InMemoryCache().restore(initialState || {}),
     connectToDevTools: !IS_SERVER,
   });
