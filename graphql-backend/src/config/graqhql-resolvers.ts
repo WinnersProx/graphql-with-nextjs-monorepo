@@ -82,6 +82,7 @@ import { Request } from 'express';
 
       // if(!context.user) throw Error("Sorry, We cannot inspire an anonymous user!");
       console.log('user', context.user);
+      console.log('hdrs', context.req.headers);
       
        return {
         id: 10,

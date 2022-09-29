@@ -1,20 +1,8 @@
-import gql from "graphql-tag"
+
 import { useQuery } from "react-apollo";
-import { getAuthToken } from "../utils";
+import { fetchInspirationQuery } from "../utils/queries";
 
-
-const fetchInspirationQuery = gql`
-query getInspiredQuery {
-    getInspired {
-      id
-      author
-      quote
-    }
-}
-`;
-
-export default function LiveInspiration () {
-    const { data, loading, error } = useQuery(fetchInspirationQuery);
+export default function LiveInspiration ({ data, loading, error }: any) {
 
     if(loading) return <div>Loading quote...</div>
 

@@ -9,5 +9,8 @@ export default function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
+  (res as any).cookie('custom-jt', 'dsdsdssd', {
+    maxAge: 1000 * 60 * 60
+});
   res.status(200).json({ name: 'John Doe' })
 }

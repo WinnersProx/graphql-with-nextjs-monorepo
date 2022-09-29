@@ -1,11 +1,10 @@
 import { InMemoryCache, NormalizedCacheObject } from 'apollo-cache-inmemory';
 import { ApolloClient } from 'apollo-client';
-import { ApolloLink, concat } from 'apollo-link';
-import { HttpLink } from 'apollo-link-http';
+import { ApolloLink } from 'apollo-link';
+import { setContext } from 'apollo-link-context';
+import { createHttpLink } from 'apollo-link-http';
 import { debug } from 'debug';
 import fetch from 'isomorphic-unfetch';
-
-import { getAuthToken } from '.';
 
 const logger = debug('app:initApollo');
 logger.log = console.log.bind(console);
@@ -15,33 +14,16 @@ export const GRAPHQL_URL = 'http://localhost:5001/graphql';
 
 let apolloClient: ApolloClient<NormalizedCacheObject> | null = null;
 
-const getHttpLink = (getToken: any) => {
-  return new HttpLink({
-    uri: GRAPHQL_URL,
-    credentials: 'same-origin',
+const setAuthLink = (token: string | undefined) => setContext((_, {headers, ...context}) => {
+  return {
     headers: {
-      // HTTP Header:  Cookie: <cookiename>=<cookievalue>
-      Cookie: `connect.sid=${getToken()['connect.sid']};lang=${getToken()['lang']}`,
+      ...headers,
+      ...(token ? {Authorization: `Bearer ${token}`, stateless: true } : {}),
+
     },
-    fetch,
-  });
-}
-
-
-const authMiddleware = new ApolloLink((operation, forward) => {
-  const accessToken = getAuthToken();
-
-  if(accessToken) {
-    operation.setContext({
-      headers: {
-        authorization: `Bearer ${accessToken}`,
-        stateless: true
-      },
-    });
-  }
-  return forward(operation);
+    ...context,
+  };
 });
-
 
 
 function create(
@@ -50,7 +32,17 @@ function create(
 ): ApolloClient<NormalizedCacheObject> {
   return new ApolloClient({
     ssrMode: !IS_SERVER, // Disables forceFetch on the server (so queries are only run once)
-    link: authMiddleware.concat(getHttpLink(getToken)),
+    link: ApolloLink.from([
+      setAuthLink(getToken()['connect.jit']),
+      createHttpLink({
+        uri: GRAPHQL_URL,
+        headers: {
+        //   // HTTP Header:  Cookie: <cookiename>=<cookievalue>
+          Cookie: `connect.sid=${getToken()['connect.sid']};lang=${getToken()['lang']}`,
+        },
+        fetch,
+      })
+    ]),
     cache: new InMemoryCache().restore(initialState || {}),
     connectToDevTools: !IS_SERVER,
   });

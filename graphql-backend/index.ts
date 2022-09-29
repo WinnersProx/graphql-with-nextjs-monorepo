@@ -28,7 +28,7 @@ expressServer.use(cookieParser("mysecret"));
 expressServer.use(bodyParser.urlencoded({ extended: false }));
 expressServer.use(bodyParser.json());
 expressServer.use(passport.initialize());
-expressServer.use(cors({ credentials: true }))
+expressServer.use(cors({ credentials: true, origin: true }))
 expressServer.use(routes);
 
 expressServer.use(
@@ -43,6 +43,7 @@ expressServer.use(
 
 // Apply Authorization Checker
 expressServer.use((req, res, next) => {
+  console.log('cookies', req.cookies);
   if(req.headers.stateless !== "true") {
     next();
     return;

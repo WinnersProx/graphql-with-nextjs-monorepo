@@ -25,6 +25,8 @@ export const useAuth = () => {
   const authenticateUser = async () => {
     const data = await axios.post("http://localhost:5001/api/auth/login", {
         email: "bihames4vainqueur@gmail.com"
+    }, {
+      withCredentials: true
     }).catch(err => { console.error(err) })
 
     if(!data?.data) return;
