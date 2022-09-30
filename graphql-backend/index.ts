@@ -21,15 +21,22 @@ import {
   IGraphQlSchemaContext,
 } from "./src/config/graqhql-resolvers";
 import routes from "./src/routes";
+import extractJwtFromCookie from "./src/middlewares/extract-jwt-from-cookie";
+import corsOptions from "./src/config/cors";
 
 const expressServer = express();
+
+expressServer.use(cors(corsOptions));
 
 expressServer.use(cookieParser("mysecret"));
 expressServer.use(bodyParser.urlencoded({ extended: false }));
 expressServer.use(bodyParser.json());
 expressServer.use(passport.initialize());
-expressServer.use(cors({ credentials: true, origin: true }))
+
+
 expressServer.use(routes);
+
+
 
 expressServer.use(
   session({
@@ -41,30 +48,7 @@ expressServer.use(
   })
 );
 
-// Apply Authorization Checker
-expressServer.use((req, res, next) => {
-  console.log('cookies', req.cookies);
-  if(req.headers.stateless !== "true") {
-    next();
-    return;
-  }
-
-  passport.authenticate('jwt', (err, user, __) => {
-    if(err || !user) {
-       res.status(401).json({
-        success: false,
-        message: 'Unauthenticated'
-      });
-      return;
-    }
-
-    req.user = user;
-
-    next();
-
-  })(req, res, next);
-});
-
+expressServer.use(extractJwtFromCookie);
 
 const apolloServer = new ApolloServer({
   context: ({ req }: { req: any }): IGraphQlSchemaContext => ({
@@ -79,11 +63,12 @@ const apolloServer = new ApolloServer({
 } as any);
 
 apolloServer.applyMiddleware({
+  cors: corsOptions,
   app: expressServer,
   path: "/graphql",
-
-
 });
+
+
 
 expressServer.listen(APP_PORT, () => {
   console.log(`> App ready on ${APP_URI}`);
